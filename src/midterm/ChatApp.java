@@ -6,7 +6,6 @@
  */
 package midterm;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -15,7 +14,9 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 
 import blackjack.message.LoginMessage;
+import blackjack.message.Message;
 import blackjack.message.MessageFactory;
+import blackjack.message.StatusMessage;
 
 /**
  * The Class ChatApp.
@@ -31,54 +32,37 @@ public class ChatApp {
 	 *            the arguments
 	 * @throws IOException
 	 *             Signals that an I/O exception has occurred.
+	 * @throws ClassNotFoundException
 	 */
-	public static void main(String[] args) throws IOException {
-
-		//String ipAddress = JOptionPane.showInputDialog("Enter Server IP Address");
+	public static void main(String[] args) throws IOException, ClassNotFoundException {
+		String str;
+		ChatWindow window;
 		String ipAddress = "137.190.250.174";
 		// socket setup
 		final int PORT_NUMBER = 8989;
-		String str;
 		Socket socket1 = new Socket();
-		ChatWindow window;
-		BufferedReader input;
-	
+
 		try {
 			socket1.connect(new InetSocketAddress(ipAddress, PORT_NUMBER), 8000);
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}
-		
+
 		ObjectOutputStream outToServer = new ObjectOutputStream(socket1.getOutputStream());
 		ObjectInputStream inFromServer = new ObjectInputStream(socket1.getInputStream());
-		LoginMessage login = MessageFactory.getLoginMessage("Ethan");
-		
-
+		Message serverMessage;
 		System.out.println(InetAddress.getLocalHost());
-		outToServer.writeObject(login);
+		window = new ChatWindow(socket1, outToServer);
 		
-		try {
-			System.out.println(inFromServer.readObject());
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-//		while (true) {
-//			str = input.readLine();
-//			if (str.equals("ACK")) {
-//				window.addText("Username Accepted");
-//				break;
-//			} else {
-//				window.addText("Invalid Username, Try again.");
-//			}
-//			
-//		}
-//
-//		// handle server communication
-//		while ((str = input.readLine()) != null) {
-//			window.addText(str);
+		// login
+		LoginMessage login = MessageFactory.getLoginMessage("Ethan");
+		outToServer.writeObject(login);
+//		serverMessage = (Message) inFromServer.readObject();
+//		if (serverMessage.getType() == Message.MessageType.ACK) {
+//			window.addText("Login Successful");
+//		} else {
+//			window.addText("Login Failed");
 //		}
 
 	}
-
 }
