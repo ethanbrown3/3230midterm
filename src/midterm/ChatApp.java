@@ -12,9 +12,12 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketException;
+import java.util.ArrayList;
 
+import blackjack.game.Card;
+import blackjack.message.CardMessage;
 import blackjack.message.ChatMessage;
+import blackjack.message.GameStateMessage;
 import blackjack.message.LoginMessage;
 import blackjack.message.Message;
 import blackjack.message.MessageFactory;
@@ -53,40 +56,84 @@ public class ChatApp {
 		ObjectInputStream inFromServer = new ObjectInputStream(socket1.getInputStream());
 		Message serverMessage;
 		System.out.println(InetAddress.getLocalHost());
-		
+
 		// login
-		LoginMessage login = MessageFactory.getLoginMessage("Ethan1");
+		String username = "Ethan6";
+		LoginMessage login = MessageFactory.getLoginMessage(username);
 		outToServer.writeObject(login);
 		outToServer.flush();
 		window = new ChatWindow(socket1, outToServer, inFromServer);
 		serverMessage = (Message) inFromServer.readObject();
 		if (serverMessage.getType() == Message.MessageType.ACK) {
 			window.addText("Login Successful");
+			socket1.setSoTimeout(0);
 		} else {
 			window.addText("Login Failed");
 		}
+		ArrayList<Card> hand = new ArrayList<>();
+		int handTotal;
+		// input handling
 		while (true) {
 			try {
 				serverMessage = (Message) inFromServer.readObject();
 			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-//			if (serverMessage.getType() == Message.MessageType.CHAT) {
-//				window.addText(((ChatMessage) serverMessage).getUsername() + ": " + ((ChatMessage) serverMessage).getText());
-//			}
+
 			switch (serverMessage.getType()) {
-			case CHAT: 
-				window.addText(((ChatMessage) serverMessage).getUsername() + ": " + ((ChatMessage) serverMessage).getText());
-			
+			case LOGIN: {
+				window.addText(serverMessage.getUsername() + ":" + "has logged in");
+				break;
 			}
+			case DENY: {
+				if (serverMessage.getUsername().equals(username)) {
+					window.addText("Server DENY");
+				}
+				break;
+			}
+			case CHAT: {
+				window.addText(((ChatMessage) serverMessage).getUsername() + ": " + ((ChatMessage) serverMessage).getText());
+				break;
+			}
+			case GAME_STATE: {
+				GameStateMessage gameState = (GameStateMessage) serverMessage;
+				switch (gameState.getRequestedState()) {
+				case START: {
+					window.addText("Game Started");
+					break;
+				}
+				case JOIN: {
+					window.addText("Would you like to join the game? Type: JOIN (TIMEOUT IN 30s)");
+					break;
+				}
+				default:
+					break;
+				}
+				break;
+			}
+			case CARD: {
+				CardMessage cardMessage = (CardMessage) serverMessage;
+				
+				if (cardMessage.getUsername().equals(username)) {
+					hand.add(cardMessage.getCard());
+				
+					for (Card c : hand) {
+						window.addText("You have: " + c.getValue() + "of " + c.getSuite());
+					}
+				}
+				break;
+			}
+			default:
+				window.addText("unknown message from server" + serverMessage.getType().toString());
+				break;
+			}
+			serverMessage = null;
+
 		}
-//		new Thread(new MessageHandler(inFromServer, window)).start();
 
 	}
 }

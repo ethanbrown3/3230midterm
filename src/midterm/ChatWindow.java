@@ -14,6 +14,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -82,7 +83,6 @@ public class ChatWindow extends JFrame {
 					try {
 						sendText();
 					} catch (IOException e1) {
-						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					}
 				}
@@ -106,7 +106,6 @@ public class ChatWindow extends JFrame {
 				try {
 					sendText();
 				} catch (IOException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}
@@ -121,19 +120,31 @@ public class ChatWindow extends JFrame {
 	}
 
 	/**
-	 * transfers text from input box to chat pane.
-	 * will eventually send text through the chat client.
-	 * @throws IOException 
+	 * transfers text from input box to chat pane. will eventually send text
+	 * through the chat client.
+	 * 
+	 * @throws IOException
 	 */
 	private void sendText() throws IOException {
 		String chat;
 		chat = chatInputArea.getText();
-		if (chat.equals("quit")) {
+		switch (chat) {
+		case "quit": {
 			logout();
 			return;
 		}
+		case "JOIN": {
+			output.writeObject(MessageFactory.getJoinMessage());
+			output.flush();
+			break;
+		}
+		case "START": {
+			output.writeObject(MessageFactory.getStartMessage());
+			output.flush();
+			break;
+		} }
 		chatInputArea.setText("");
-		output.writeObject(MessageFactory.getChatMessage(chat));	
+		output.writeObject(MessageFactory.getChatMessage(chat));
 		output.flush();
 	}
 
@@ -149,11 +160,12 @@ public class ChatWindow extends JFrame {
 			input.close();
 			socket1.close();
 			addText("logout successful");
+			chatInputArea.setText("");
 		} catch (IOException e) {
 			System.err.println("couldn't close socket");
 			e.printStackTrace();
 		}
-
+		this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
 	}
 
 	/**
