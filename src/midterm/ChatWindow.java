@@ -15,6 +15,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
@@ -34,25 +35,27 @@ import blackjack.message.MessageFactory;
 public class ChatWindow extends JFrame {
 
 	private static final long serialVersionUID = -4248589752453598110L;
-	
+
 	private JTextArea chatArea;
 	private JTextArea chatInputArea;
 	private ObjectOutputStream output;
 	private Socket socket1;
-
+	private ObjectInputStream input;
 
 	/**
 	 * @throws HeadlessException
-	 * @throws IOException 
+	 * @throws IOException
 	 */
-	public ChatWindow(Socket socket, ObjectOutputStream oos) throws HeadlessException, IOException {
+	public ChatWindow(Socket socket, ObjectOutputStream oos, ObjectInputStream ois)
+			throws HeadlessException, IOException {
 		output = oos;
+		input = ois;
 		socket1 = socket;
-		
+
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setSize(new Dimension(500, 400));
 		this.setResizable(true);
-		
+
 		// center panel
 		JPanel contentPane = new JPanel(new BorderLayout());
 		chatArea = new JTextArea();
@@ -108,7 +111,7 @@ public class ChatWindow extends JFrame {
 				}
 			}
 		});
-		
+
 		contentPane.add(inputPanel, "South");
 		getContentPane().add(contentPane);
 		contentPane.setVisible(true);
@@ -130,13 +133,8 @@ public class ChatWindow extends JFrame {
 			return;
 		}
 		chatInputArea.setText("");
-		output.writeObject(MessageFactory.getChatMessage(chat));		
-	}
-	
-	private void logout() throws IOException {
-		socket1.close();
-		addText("logout successful");
-		
+		output.writeObject(MessageFactory.getChatMessage(chat));	
+		output.flush();
 	}
 
 	public void addText(String chat) {
@@ -145,11 +143,24 @@ public class ChatWindow extends JFrame {
 
 	}
 
+	private void logout() {
+		try {
+			output.close();
+			input.close();
+			socket1.close();
+			addText("logout successful");
+		} catch (IOException e) {
+			System.err.println("couldn't close socket");
+			e.printStackTrace();
+		}
+
+	}
+
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
-//		new ChatWindow();
+		// new ChatWindow();
 	}
 
 }
