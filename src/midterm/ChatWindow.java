@@ -142,7 +142,17 @@ public class ChatWindow extends JFrame {
 			output.writeObject(MessageFactory.getStartMessage());
 			output.flush();
 			break;
-		} }
+		}
+		case "HIT": {
+			output.writeObject(MessageFactory.getHitMessage());
+			break;
+		}
+		case "STAY": {
+			output.writeObject(MessageFactory.getStayMessage());
+			break;
+		}
+
+		}
 		chatInputArea.setText("");
 		output.writeObject(MessageFactory.getChatMessage(chat));
 		output.flush();

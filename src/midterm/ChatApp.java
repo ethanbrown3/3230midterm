@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import blackjack.game.Card;
 import blackjack.message.CardMessage;
 import blackjack.message.ChatMessage;
+import blackjack.message.GameActionMessage;
 import blackjack.message.GameStateMessage;
 import blackjack.message.LoginMessage;
 import blackjack.message.Message;
@@ -39,7 +40,6 @@ public class ChatApp {
 	 * @throws ClassNotFoundException
 	 */
 	public static void main(String[] args) throws IOException, ClassNotFoundException {
-		String str;
 		ChatWindow window;
 		String ipAddress = "52.35.72.251";
 		// socket setup
@@ -48,6 +48,7 @@ public class ChatApp {
 
 		try {
 			socket1.connect(new InetSocketAddress(ipAddress, PORT_NUMBER), 8000);
+			socket1.setSoTimeout(0);
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}
@@ -58,7 +59,7 @@ public class ChatApp {
 		System.out.println(InetAddress.getLocalHost());
 
 		// login
-		String username = "Ethan6";
+		String username = "Ethan7";
 		LoginMessage login = MessageFactory.getLoginMessage(username);
 		outToServer.writeObject(login);
 		outToServer.flush();
@@ -66,12 +67,10 @@ public class ChatApp {
 		serverMessage = (Message) inFromServer.readObject();
 		if (serverMessage.getType() == Message.MessageType.ACK) {
 			window.addText("Login Successful");
-			socket1.setSoTimeout(0);
 		} else {
 			window.addText("Login Failed");
 		}
 		ArrayList<Card> hand = new ArrayList<>();
-		int handTotal;
 		// input handling
 		while (true) {
 			try {
@@ -90,13 +89,12 @@ public class ChatApp {
 				break;
 			}
 			case DENY: {
-				if (serverMessage.getUsername().equals(username)) {
-					window.addText("Server DENY");
-				}
+				window.addText("Server DENY");
 				break;
 			}
 			case CHAT: {
-				window.addText(((ChatMessage) serverMessage).getUsername() + ": " + ((ChatMessage) serverMessage).getText());
+				window.addText(
+						((ChatMessage) serverMessage).getUsername() + ": " + ((ChatMessage) serverMessage).getText());
 				break;
 			}
 			case GAME_STATE: {
@@ -113,19 +111,42 @@ public class ChatApp {
 				default:
 					break;
 				}
-				break;
 			}
 			case CARD: {
 				CardMessage cardMessage = (CardMessage) serverMessage;
-				
+
 				if (cardMessage.getUsername().equals(username)) {
 					hand.add(cardMessage.getCard());
-				
+
 					for (Card c : hand) {
 						window.addText("You have: " + c.getValue() + "of " + c.getSuite());
 					}
+				} else {
+					window.addText(cardMessage.getUsername() + " was dealt a card");
 				}
 				break;
+			}
+			case GAME_ACTION: {
+				GameActionMessage gameAction = (GameActionMessage) serverMessage;
+				switch (gameAction.getAction()) {
+				case HIT: {
+					window.addText(gameAction.getUsername() + " Hit");
+					break;
+				}
+				case STAY: {
+					window.addText(gameAction.getUsername() + " Stayed");
+					break;
+				}
+				case BUST: {
+					window.addText(gameAction.getUsername() + " Busted");
+					break;
+				}
+				case WIN: {
+					window.addText(gameAction.getUsername() + " won");
+					break;
+				}
+				}
+
 			}
 			default:
 				window.addText("unknown message from server" + serverMessage.getType().toString());
